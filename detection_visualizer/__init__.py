@@ -25,6 +25,7 @@ from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
 from sensor_msgs.msg import Image
 from vision_msgs.msg import Detection2DArray
+from depthai_ros_msgs.msg import SpatialDetectionArray
 
 
 class DetectionVisualizerNode(Node):
@@ -42,8 +43,8 @@ class DetectionVisualizerNode(Node):
 
         self._image_pub = self.create_publisher(Image, '~/dbg_images', output_image_qos)
 
-        self._image_sub = message_filters.Subscriber(self, Image, '~/images')
-        self._detections_sub = message_filters.Subscriber(self, Detection2DArray, '~/detections')
+        self._image_sub = message_filters.Subscriber(self, Image, '/color/image')
+        self._detections_sub = message_filters.Subscriber(self, SpatialDetectionArray, '/color/yolov4_Spatial_detections')
 
         self._synchronizer = message_filters.ApproximateTimeSynchronizer(
             (self._image_sub, self._detections_sub), 5, 0.01)
@@ -57,10 +58,9 @@ class DetectionVisualizerNode(Node):
             max_class = None
             max_score = 0.0
             for result in detection.results:
-                hypothesis = result.hypothesis
-                if hypothesis.score > max_score:
-                    max_score = hypothesis.score
-                    max_class = hypothesis.class_id
+                if result.score >= max_score:
+                    max_score = result.score
+                    max_class = result.class_id
             if max_class is None:
                 print("Failed to find class with highest score", file=sys.stderr)
                 return
